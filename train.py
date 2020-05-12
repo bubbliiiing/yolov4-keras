@@ -44,14 +44,14 @@ def data_generator(annotation_lines, batch_size, input_shape, anchors, num_class
                 np.random.shuffle(annotation_lines)
             if mosaic:
                 if flag and (i+4) < n:
-                    image, box = get_random_data_with_Mosaic(annotation_lines[i:i+4], input_shape, random=True)
+                    image, box = get_random_data_with_Mosaic(annotation_lines[i:i+4], input_shape)
                     i = (i+4) % n
                 else:
-                    image, box = get_random_data(annotation_lines[i], input_shape, random=True)
+                    image, box = get_random_data(annotation_lines[i], input_shape)
                     i = (i+1) % n
                 flag = bool(1-flag)
             else:
-                image, box = get_random_data(annotation_lines[i], input_shape, random=True)
+                image, box = get_random_data(annotation_lines[i], input_shape)
                 i = (i+1) % n
             image_data.append(image)
             box_data.append(box)
