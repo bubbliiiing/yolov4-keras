@@ -96,7 +96,7 @@ def merge_bboxes(bboxes, cutx, cuty):
             merge_bbox.append(tmp_box)
     return merge_bbox
 
-def get_random_data_with_Mosaic(annotation_line, input_shape, random=True, max_boxes=50, hue=.1, sat=1.5, val=1.5, proc_img=True):
+def get_random_data_with_Mosaic(annotation_line, input_shape, max_boxes=50, hue=.1, sat=1.5, val=1.5):
     '''random preprocessing for real-time data augmentation'''
     h, w = input_shape
     min_offset_x = 0.4
@@ -203,7 +203,7 @@ def get_random_data_with_Mosaic(annotation_line, input_shape, random=True, max_b
     return new_image, box_data
 
 
-def get_random_data(annotation_line, input_shape, random=True, max_boxes=50, jitter=.3, hue=.1, sat=1.5, val=1.5, proc_img=True):
+def get_random_data(annotation_line, input_shape, max_boxes=50, jitter=.3, hue=.1, sat=1.5, val=1.5):
     '''random preprocessing for real-time data augmentation'''
     line = annotation_line.split()
     image = Image.open(line[0])
