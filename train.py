@@ -226,7 +226,7 @@ if __name__ == "__main__":
             warmup_steps = int(warmup_epoch * num_train / batch_size)
             # 学习率
             reduce_lr = WarmUpCosineDecayScheduler(learning_rate_base=learning_rate_base,
-                                                        total_steps=(Freeze_epoch-Init_epoch),
+                                                        total_steps=total_steps,
                                                         warmup_learning_rate=1e-4,
                                                         warmup_steps=warmup_steps,
                                                         hold_base_rate_steps=num_train,
