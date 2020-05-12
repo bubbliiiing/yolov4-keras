@@ -242,8 +242,8 @@ if __name__ == "__main__":
                 steps_per_epoch=max(1, num_train//batch_size//2.5) if mosaic else max(1, num_train//batch_size),
                 validation_data=data_generator(lines[num_train:], batch_size, input_shape, anchors, num_classes, mosaic=mosaic),
                 validation_steps=max(1, num_val//batch_size//2.5) if mosaic else max(1, num_val//batch_size),
-                epochs=Epoch,
-                initial_epoch=Freeze_epoch,
+                epochs=Freeze_epoch,
+                initial_epoch=Init_epoch,
                 callbacks=[logging, checkpoint, reduce_lr, early_stopping])
         model.save_weights(log_dir + 'trained_weights_stage_1.h5')
 
