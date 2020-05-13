@@ -112,7 +112,7 @@ def get_random_data_with_Mosaic(annotation_line, input_shape, max_boxes=50, hue=
     place_y = [0,int(h*min_offset_y),int(w*min_offset_y),0]
     for line in annotation_line:
         # 每一行进行分割
-        line_content = line.split(" ")
+        line_content = line.split()
         # 打开图片
         image = Image.open(line_content[0])
         image = image.convert("RGB") 
