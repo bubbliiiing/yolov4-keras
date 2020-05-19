@@ -320,31 +320,54 @@ class WarmUpCosineDecayScheduler(keras.callbacks.Callback):
                  warmup_steps=0,
                  hold_base_rate_steps=0,
                  min_learn_rate=0,
+                 # interval_epoch代表余弦退火之间的最低点
+                 interval_epoch=[0.05, 0.15, 0.30, 0.50],
                  verbose=0):
         super(WarmUpCosineDecayScheduler, self).__init__()
         # 基础的学习率
         self.learning_rate_base = learning_rate_base
-        # 总共的步数，训练完所有世代的步数epochs * sample_count / batch_size
-        self.total_steps = total_steps
-        # 全局初始化step
-        self.global_step = global_step_init
         # 热调整参数
         self.warmup_learning_rate = warmup_learning_rate
-        # 热调整步长，warmup_epoch * sample_count / batch_size
-        self.warmup_steps = warmup_steps
-        self.hold_base_rate_steps = hold_base_rate_steps
         # 参数显示  
         self.verbose = verbose
         # learning_rates用于记录每次更新后的学习率，方便图形化观察
         self.min_learn_rate = min_learn_rate
         self.learning_rates = []
+
+        self.interval_epoch = interval_epoch
+        # 贯穿全局的步长
+        self.global_step_for_interval = global_step_init
+        # 用于上升的总步长
+        self.warmup_steps_for_interval = warmup_steps
+        # 保持最高峰的总步长
+        self.hold_steps_for_interval = hold_base_rate_steps
+        # 整个训练的总步长
+        self.total_steps_for_interval = total_steps
+
+        self.interval_index = 0
+        # 计算出来两个最低点的间隔
+        self.interval_reset = [self.interval_epoch[0]]
+        for i in range(len(self.interval_epoch)-1):
+            self.interval_reset.append(self.interval_epoch[i+1]-self.interval_epoch[i])
+        self.interval_reset.append(1-self.interval_epoch[-1])
+
 	#更新global_step，并记录当前学习率
     def on_batch_end(self, batch, logs=None):
         self.global_step = self.global_step + 1
+        self.global_step_for_interval = self.global_step_for_interval + 1
         lr = K.get_value(self.model.optimizer.lr)
         self.learning_rates.append(lr)
+
 	#更新学习率
     def on_batch_begin(self, batch, logs=None):
+        # 每到一次最低点就重新更新参数
+        if self.global_step_for_interval in [0]+[int(i*self.total_steps_for_interval) for i in self.interval_epoch]:
+            self.total_steps = self.total_steps_for_interval * self.interval_reset[self.interval_index]
+            self.warmup_steps = self.warmup_steps_for_interval * self.interval_reset[self.interval_index]
+            self.hold_base_rate_steps = self.hold_steps_for_interval * self.interval_reset[self.interval_index]
+            self.global_step = 0
+            self.interval_index += 1
+
         lr = cosine_decay_with_warmup(global_step=self.global_step,
                                       learning_rate_base=self.learning_rate_base,
                                       total_steps=self.total_steps,
