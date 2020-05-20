@@ -9,7 +9,7 @@ from keras.layers import Input
 from keras.applications.imagenet_utils import preprocess_input
 from keras import backend as K
 from utils.utils import letterbox_image
-from nets.yolo3 import yolo_body,yolo_eval
+from nets.yolo4 import yolo_body,yolo_eval
 import colorsys
 import numpy as np
 import os
