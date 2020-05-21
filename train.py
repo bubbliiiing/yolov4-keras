@@ -241,7 +241,7 @@ if __name__ == "__main__":
         model.fit_generator(data_generator(lines[:num_train], batch_size, input_shape, anchors, num_classes, mosaic=mosaic),
                 steps_per_epoch=max(1, num_train//batch_size//2.5) if mosaic else max(1, num_train//batch_size),
                 validation_data=data_generator(lines[num_train:], batch_size, input_shape, anchors, num_classes, mosaic=False),
-                validation_steps=max(1, num_val//batch_size//2.5) if mosaic else max(1, num_val//batch_size),
+                validation_steps=max(1, num_val//batch_size),
                 epochs=Freeze_epoch,
                 initial_epoch=Init_epoch,
                 callbacks=[logging, checkpoint, reduce_lr, early_stopping])
@@ -282,7 +282,7 @@ if __name__ == "__main__":
         model.fit_generator(data_generator(lines[:num_train], batch_size, input_shape, anchors, num_classes, mosaic=mosaic),
                 steps_per_epoch=max(1, num_train//batch_size//2.5) if mosaic else max(1, num_train//batch_size),
                 validation_data=data_generator(lines[num_train:], batch_size, input_shape, anchors, num_classes, mosaic=False),
-                validation_steps=max(1, num_val//batch_size//2.5) if mosaic else max(1, num_val//batch_size),
+                validation_steps=max(1, num_val//batch_size),
                 epochs=Epoch,
                 initial_epoch=Freeze_epoch,
                 callbacks=[logging, checkpoint, reduce_lr, early_stopping])
