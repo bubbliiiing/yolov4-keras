@@ -1,7 +1,6 @@
 from keras import backend as K
 import tensorflow as tf
 import math
-
 def box_ciou(b1, b2):
     """
     输入为：
@@ -34,7 +33,7 @@ def box_ciou(b1, b2):
     b1_area = b1_wh[..., 0] * b1_wh[..., 1]
     b2_area = b2_wh[..., 0] * b2_wh[..., 1]
     union_area = b1_area + b2_area - intersect_area
-    iou = intersect_area / (union_area + K.epsilon())
+    iou = intersect_area / K.maximum(union_area,K.epsilon())
 
     # 计算中心的差距
     center_distance = K.sum(K.square(b1_xy - b2_xy), axis=-1)
@@ -44,10 +43,10 @@ def box_ciou(b1, b2):
     enclose_wh = K.maximum(enclose_maxes - enclose_mins, 0.0)
     # 计算对角线距离
     enclose_diagonal = K.sum(K.square(enclose_wh), axis=-1)
-    ciou = iou - 1.0 * (center_distance) / (enclose_diagonal + K.epsilon())
+    ciou = iou - 1.0 * (center_distance) / K.maximum(enclose_diagonal ,K.epsilon())
     
-    v = 4*K.square(tf.math.atan2(b1_wh[..., 0], b1_wh[..., 1]) - tf.math.atan2(b2_wh[..., 0], b2_wh[..., 1])) / (math.pi * math.pi)
-    alpha = v / (1.0 - iou + v)
+    v = 4*K.square(tf.math.atan2(b1_wh[..., 0], K.maximum(b1_wh[..., 1],K.epsilon())) - tf.math.atan2(b2_wh[..., 0], K.maximum(b2_wh[..., 1],K.epsilon()))) / (math.pi * math.pi)
+    alpha = v /  K.maximum((1.0 - iou + v), K.epsilon())
     ciou = ciou - alpha * v
 
     ciou = K.expand_dims(ciou, -1)
