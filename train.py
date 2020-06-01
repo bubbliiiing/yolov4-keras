@@ -214,7 +214,7 @@ if __name__ == "__main__":
         Init_epoch = 0
         Freeze_epoch = 25
         # batch_size大小，每次喂入多少数据
-        batch_size = 8
+        batch_size = 4
         # 最大学习率
         learning_rate_base = 1e-3
         if Cosine_scheduler:
