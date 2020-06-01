@@ -168,7 +168,7 @@ if __name__ == "__main__":
     h, w = input_shape
 
     # 创建yolo模型
-    print('Create YOLOv3 model with {} anchors and {} classes.'.format(num_anchors, num_classes))
+    print('Create YOLOv4 model with {} anchors and {} classes.'.format(num_anchors, num_classes))
     model_body = yolo_body(image_input, num_anchors//3, num_classes)
     
     # 载入预训练权重
