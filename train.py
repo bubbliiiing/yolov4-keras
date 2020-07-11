@@ -134,18 +134,21 @@ def preprocess_true_boxes(true_boxes, input_shape, anchors, num_classes):
     return y_true
 
 
-
-
+#----------------------------------------------------#
+#   检测精度mAP和pr曲线计算参考视频
+#   https://www.bilibili.com/video/BV1zE411u7Vw
+#----------------------------------------------------#
 if __name__ == "__main__":
     # 标签的位置
     annotation_path = '2007_train.txt'
     # 获取classes和anchor的位置
     classes_path = 'model_data/voc_classes.txt'    
     anchors_path = 'model_data/yolo_anchors.txt'
-    #-------------------------------------------#
-    #   权值文件的下载请看README
-    #   预训练模型的位置
-    #-------------------------------------------#
+    #------------------------------------------------------#
+    #   权值文件请看README，百度网盘下载
+    #   训练自己的数据集时提示维度不匹配正常
+    #   预测的东西都不一样了自然维度不匹配
+    #------------------------------------------------------#
     weights_path = 'model_data/yolo4_weight.h5'
     # 获得classes和anchor
     class_names = get_classes(classes_path)
@@ -208,6 +211,14 @@ if __name__ == "__main__":
     num_val = int(len(lines)*val_split)
     num_train = len(lines) - num_val
     
+    #------------------------------------------------------#
+    #   主干特征提取网络特征通用，冻结训练可以加快训练速度
+    #   也可以在训练初期防止权值被破坏。
+    #   Init_Epoch为起始世代
+    #   Freeze_Epoch为冻结训练的世代
+    #   Epoch总训练世代
+    #   提示OOM或者显存不足请调小Batch_size
+    #------------------------------------------------------#
     freeze_layers = 249
     for i in range(freeze_layers): model_body.layers[i].trainable = False
     print('Freeze the first {} layers of total {} layers.'.format(freeze_layers, len(model_body.layers)))
