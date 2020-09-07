@@ -216,7 +216,7 @@ def get_random_data(annotation_line, input_shape, max_boxes=50, jitter=.3, hue=.
 
     # 对图像进行缩放并且进行长和宽的扭曲
     new_ar = w/h * rand(1-jitter,1+jitter)/rand(1-jitter,1+jitter)
-    scale = rand(.25,2)
+    scale = rand(.5, 1.5)
     if new_ar < 1:
         nh = int(scale*h)
         nw = int(nh*new_ar)
