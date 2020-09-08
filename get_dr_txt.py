@@ -10,9 +10,11 @@ from keras.applications.imagenet_utils import preprocess_input
 from keras import backend as K
 from utils.utils import letterbox_image
 from nets.yolo4 import yolo_body,yolo_eval
+from tqdm import tqdm
 import colorsys
 import numpy as np
 import os
+
 class mAP_YOLO(YOLO):
     #---------------------------------------------------#
     #   获得所有的分类
@@ -101,7 +103,7 @@ if not os.path.exists("./input/detection-results"):
 if not os.path.exists("./input/images-optional"):
     os.makedirs("./input/images-optional")
 
-for image_id in image_ids:
+for image_id in tqdm(image_ids):
     image_path = "./VOCdevkit/VOC2007/JPEGImages/"+image_id+".jpg"
     image = Image.open(image_path)
     # 开启后在之后计算mAP可以可视化
