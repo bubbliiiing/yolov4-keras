@@ -15,14 +15,15 @@ from utils.utils import letterbox_image
 #--------------------------------------------#
 class YOLO(object):
     _defaults = {
-        "model_path": 'model_data/yolo4_weight.h5',
-        "anchors_path": 'model_data/yolo_anchors.txt',
-        "classes_path": 'model_data/coco_classes.txt',
-        "score" : 0.5,
-        "iou" : 0.3,
+        "model_path"        : 'model_data/yolo4_weight.h5',
+        "anchors_path"      : 'model_data/yolo_anchors.txt',
+        "classes_path"      : 'model_data/coco_classes.txt',
+        "score"             : 0.5,
+        "iou"               : 0.3,
+        "max_boxes"         : 100,
         # 显存比较小可以使用416x416
         # 显存比较大可以使用608x608
-        "model_image_size" : (416, 416)
+        "model_image_size"  : (416, 416)
     }
 
     @classmethod
@@ -103,8 +104,8 @@ class YOLO(object):
         self.input_image_shape = K.placeholder(shape=(2, ))
 
         boxes, scores, classes = yolo_eval(self.yolo_model.output, self.anchors,
-                num_classes, self.input_image_shape,
-                score_threshold=self.score, iou_threshold=self.iou)
+                num_classes, self.input_image_shape, max_boxes = self.max_boxes,
+                score_threshold = self.score, iou_threshold = self.iou)
         return boxes, scores, classes
 
     #---------------------------------------------------#
