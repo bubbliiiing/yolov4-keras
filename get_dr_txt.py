@@ -59,8 +59,8 @@ class mAP_YOLO(YOLO):
         self.input_image_shape = K.placeholder(shape=(2, ))
 
         boxes, scores, classes = yolo_eval(self.yolo_model.output, self.anchors,
-                num_classes, self.input_image_shape,
-                score_threshold=self.score, iou_threshold=self.iou)
+                num_classes, self.input_image_shape, max_boxes = self.max_boxes,
+                score_threshold = self.score, iou_threshold = self.iou)
         return boxes, scores, classes
 
     #---------------------------------------------------#
