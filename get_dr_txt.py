@@ -21,6 +21,7 @@ class mAP_YOLO(YOLO):
     #---------------------------------------------------#
     def generate(self):
         self.score = 0.01
+        self.iou = 0.5
         model_path = os.path.expanduser(self.model_path)
         assert model_path.endswith('.h5'), 'Keras model or weights must be a .h5 file.'
         
