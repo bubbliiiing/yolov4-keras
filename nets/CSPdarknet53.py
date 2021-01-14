@@ -1,6 +1,8 @@
 from functools import wraps
+
 from keras import backend as K
-from keras.layers import Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D, Layer
+from keras.layers import (Add, Concatenate, Conv2D, Layer, MaxPooling2D,
+                          UpSampling2D, ZeroPadding2D)
 from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
@@ -21,8 +23,11 @@ class Mish(Layer):
 
     def compute_output_shape(self, input_shape):
         return input_shape
+
 #--------------------------------------------------#
-#   单次卷积
+#   单次卷积DarknetConv2D
+#   正则化系数为5e-4
+#   如果步长为2则自己设定padding方式。
 #--------------------------------------------------#
 @wraps(Conv2D)
 def DarknetConv2D(*args, **kwargs):
@@ -32,7 +37,7 @@ def DarknetConv2D(*args, **kwargs):
     return Conv2D(*args, **darknet_conv_kwargs)
 
 #---------------------------------------------------#
-#   卷积块
+#   卷积块 -> 卷积 + 标准化 + 激活函数
 #   DarknetConv2D + BatchNormalization + Mish
 #---------------------------------------------------#
 def DarknetConv2D_BN_Mish(*args, **kwargs):
@@ -43,36 +48,48 @@ def DarknetConv2D_BN_Mish(*args, **kwargs):
         BatchNormalization(),
         Mish())
 
-#---------------------------------------------------#
+#--------------------------------------------------------------------#
 #   CSPdarknet的结构块
-#   存在一个大残差边
-#   这个大残差边绕过了很多的残差结构
-#---------------------------------------------------#
+#   首先利用ZeroPadding2D和一个步长为2x2的卷积块进行高和宽的压缩
+#   然后建立一个大的残差边shortconv、这个大残差边绕过了很多的残差结构
+#   主干部分会对num_blocks进行循环，循环内部是残差结构。
+#   对于整个CSPdarknet的结构块，就是一个大残差块+内部多个小残差块
+#--------------------------------------------------------------------#
 def resblock_body(x, num_filters, num_blocks, all_narrow=True):
-    # 进行长和宽的压缩
+    #----------------------------------------------------------------#
+    #   利用ZeroPadding2D和一个步长为2x2的卷积块进行高和宽的压缩
+    #----------------------------------------------------------------#
     preconv1 = ZeroPadding2D(((1,0),(1,0)))(x)
     preconv1 = DarknetConv2D_BN_Mish(num_filters, (3,3), strides=(2,2))(preconv1)
 
-    # 生成一个大的残差边 
+    #--------------------------------------------------------------------#
+    #   然后建立一个大的残差边shortconv、这个大残差边绕过了很多的残差结构
+    #--------------------------------------------------------------------#
     shortconv = DarknetConv2D_BN_Mish(num_filters//2 if all_narrow else num_filters, (1,1))(preconv1)
 
-    # 主干部分的卷积
+    #----------------------------------------------------------------#
+    #   主干部分会对num_blocks进行循环，循环内部是残差结构。
+    #----------------------------------------------------------------#
     mainconv = DarknetConv2D_BN_Mish(num_filters//2 if all_narrow else num_filters, (1,1))(preconv1)
-    # 1x1卷积对通道数进行整合->3x3卷积提取特征，使用残差结构
     for i in range(num_blocks):
         y = compose(
                 DarknetConv2D_BN_Mish(num_filters//2, (1,1)),
                 DarknetConv2D_BN_Mish(num_filters//2 if all_narrow else num_filters, (3,3)))(mainconv)
         mainconv = Add()([mainconv,y])
-    # 1x1卷积后和残差边堆叠
     postconv = DarknetConv2D_BN_Mish(num_filters//2 if all_narrow else num_filters, (1,1))(mainconv)
+
+    #----------------------------------------------------------------#
+    #   将大残差边再堆叠回来
+    #----------------------------------------------------------------#
     route = Concatenate()([postconv, shortconv])
 
     # 最后对通道数进行整合
     return DarknetConv2D_BN_Mish(num_filters, (1,1))(route)
 
 #---------------------------------------------------#
-#   darknet53 的主体部分
+#   CSPdarknet53 的主体部分
+#   输入为一张416x416x3的图片
+#   输出为三个有效特征层
 #---------------------------------------------------#
 def darknet_body(x):
     x = DarknetConv2D_BN_Mish(32, (3,3))(x)

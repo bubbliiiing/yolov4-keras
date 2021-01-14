@@ -3,17 +3,20 @@
 #   具体视频教程可查看
 #   https://www.bilibili.com/video/BV1zE411u7Vw
 #----------------------------------------------------#
-from yolo import YOLO
-from PIL import Image
-from keras.layers import Input
-from keras.applications.imagenet_utils import preprocess_input
-from keras import backend as K
-from utils.utils import letterbox_image
-from nets.yolo4 import yolo_body,yolo_eval
-from tqdm import tqdm
 import colorsys
-import numpy as np
 import os
+
+import numpy as np
+from keras import backend as K
+from keras.applications.imagenet_utils import preprocess_input
+from keras.layers import Input
+from PIL import Image
+from tqdm import tqdm
+
+from nets.yolo4 import yolo_body, yolo_eval
+from utils.utils import letterbox_image
+from yolo import YOLO
+
 
 class mAP_YOLO(YOLO):
     #---------------------------------------------------#
@@ -25,12 +28,16 @@ class mAP_YOLO(YOLO):
         model_path = os.path.expanduser(self.model_path)
         assert model_path.endswith('.h5'), 'Keras model or weights must be a .h5 file.'
         
-        # 计算anchor数量
+        #---------------------------------------------------#
+        #   计算先验框的数量和种类的数量
+        #---------------------------------------------------#
         num_anchors = len(self.anchors)
         num_classes = len(self.class_names)
 
-        # 载入模型，如果原来的模型里已经包括了模型结构则直接载入。
-        # 否则先构建模型再载入
+        #---------------------------------------------------------#
+        #   载入模型，如果原来的模型里已经包括了模型结构则直接载入。
+        #   否则先构建模型再载入
+        #---------------------------------------------------------#
         try:
             self.yolo_model = load_model(model_path, compile=False)
         except:
@@ -58,6 +65,10 @@ class mAP_YOLO(YOLO):
 
         self.input_image_shape = K.placeholder(shape=(2, ))
 
+        #---------------------------------------------------------#
+        #   在yolo_eval函数中，我们会对预测结果进行后处理
+        #   后处理的内容包括，解码、非极大抑制、门限筛选等
+        #---------------------------------------------------------#
         boxes, scores, classes = yolo_eval(self.yolo_model.output, self.anchors,
                 num_classes, self.input_image_shape, max_boxes = self.max_boxes,
                 score_threshold = self.score, iou_threshold = self.iou)
@@ -68,21 +79,27 @@ class mAP_YOLO(YOLO):
     #---------------------------------------------------#
     def detect_image(self, image_id, image):
         f = open("./input/detection-results/"+image_id+".txt","w") 
-        # 调整图片使其符合输入要求
+        #---------------------------------------------------------#
+        #   给图像增加灰条，实现不失真的resize
+        #---------------------------------------------------------#
         new_image_size = (self.model_image_size[1],self.model_image_size[0])
         boxed_image = letterbox_image(image, new_image_size)
         image_data = np.array(boxed_image, dtype='float32')
         image_data /= 255.
-        image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
+        #---------------------------------------------------------#
+        #   添加上batch_size维度
+        #---------------------------------------------------------#
+        image_data = np.expand_dims(image_data, 0)
 
-        # 预测结果
+        #---------------------------------------------------------#
+        #   将图像输入网络当中进行预测！
+        #---------------------------------------------------------#
         out_boxes, out_scores, out_classes = self.sess.run(
             [self.boxes, self.scores, self.classes],
             feed_dict={
                 self.yolo_model.input: image_data,
                 self.input_image_shape: [image.size[1], image.size[0]],
-                K.learning_phase(): 0
-            })
+                K.learning_phase(): 0})
 
         for i, c in enumerate(out_classes):
             predicted_class = self.class_names[int(c)]

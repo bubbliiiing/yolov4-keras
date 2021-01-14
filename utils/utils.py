@@ -1,12 +1,12 @@
-"""Miscellaneous utility functions."""
+from functools import reduce
 
-import numpy as np
+import cv2
 import keras
 import keras.backend as K
-from functools import reduce
+import numpy as np
+from matplotlib.colors import hsv_to_rgb, rgb_to_hsv
 from PIL import Image
-from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
-import cv2
+
 
 def compose(*funcs):
     if funcs:
@@ -101,8 +101,8 @@ def merge_bboxes(bboxes, cutx, cuty):
 def get_random_data_with_Mosaic(annotation_line, input_shape, max_boxes=100, hue=.1, sat=1.5, val=1.5):
     '''random preprocessing for real-time data augmentation'''
     h, w = input_shape
-    min_offset_x = 0.4
-    min_offset_y = 0.4
+    min_offset_x = 0.3
+    min_offset_y = 0.3
     scale_low = 1-min(min_offset_x,min_offset_y)
     scale_high = scale_low+0.2
 
@@ -112,6 +112,7 @@ def get_random_data_with_Mosaic(annotation_line, input_shape, max_boxes=100, hue
 
     place_x = [0,0,int(w*min_offset_x),int(w*min_offset_x)]
     place_y = [0,int(h*min_offset_y),int(h*min_offset_y),0]
+
     for line in annotation_line:
         # 每一行进行分割
         line_content = line.split()
@@ -163,7 +164,6 @@ def get_random_data_with_Mosaic(annotation_line, input_shape, max_boxes=100, hue
         new_image.paste(image, (dx, dy))
         image_data = np.array(new_image)/255
 
-        
         index = index + 1
         box_data = []
         # 对box进行重新处理
@@ -183,8 +183,6 @@ def get_random_data_with_Mosaic(annotation_line, input_shape, max_boxes=100, hue
         image_datas.append(image_data)
         box_datas.append(box_data)
 
-
-    
     # 将图片分割，放在一起
     cutx = np.random.randint(int(w*min_offset_x), int(w*(1 - min_offset_x)))
     cuty = np.random.randint(int(h*min_offset_y), int(h*(1 - min_offset_y)))
@@ -206,7 +204,7 @@ def get_random_data_with_Mosaic(annotation_line, input_shape, max_boxes=100, hue
     return new_image, box_data
 
 
-def get_random_data(annotation_line, input_shape, max_boxes=100, jitter=.3, hue=.1, sat=1.5, val=1.5):
+def get_random_data(annotation_line, input_shape, max_boxes=100, jitter=.3, hue=.1, sat=1.5, val=1.5, random=True):
     '''random preprocessing for real-time data augmentation'''
     line = annotation_line.split()
     image = Image.open(line[0])
@@ -214,6 +212,36 @@ def get_random_data(annotation_line, input_shape, max_boxes=100, jitter=.3, hue=
     h, w = input_shape
     box = np.array([np.array(list(map(int,box.split(',')))) for box in line[1:]])
 
+    if not random:
+        # resize image
+        scale = min(w/iw, h/ih)
+        nw = int(iw*scale)
+        nh = int(ih*scale)
+        dx = (w-nw)//2
+        dy = (h-nh)//2
+
+        image = image.resize((nw,nh), Image.BICUBIC)
+        new_image = Image.new('RGB', (w,h), (128,128,128))
+        new_image.paste(image, (dx, dy))
+        image_data = np.array(new_image, np.float32)/255
+
+        # correct boxes
+        box_data = np.zeros((max_boxes,5))
+        if len(box)>0:
+            np.random.shuffle(box)
+            box[:, [0,2]] = box[:, [0,2]]*nw/iw + dx
+            box[:, [1,3]] = box[:, [1,3]]*nh/ih + dy
+            box[:, 0:2][box[:, 0:2]<0] = 0
+            box[:, 2][box[:, 2]>w] = w
+            box[:, 3][box[:, 3]>h] = h
+            box_w = box[:, 2] - box[:, 0]
+            box_h = box[:, 3] - box[:, 1]
+            box = box[np.logical_and(box_w>1, box_h>1)] # discard invalid box
+            if len(box)>max_boxes: box = box[:max_boxes]
+            box_data[:len(box)] = box
+
+        return image_data, box_data
+        
     # 对图像进行缩放并且进行长和宽的扭曲
     new_ar = w/h * rand(1-jitter,1+jitter)/rand(1-jitter,1+jitter)
     scale = rand(.25, 2)
