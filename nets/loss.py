@@ -238,9 +238,9 @@ def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0.1,
         
         class_loss = object_mask * K.binary_crossentropy(true_class_probs, raw_pred[...,5:], from_logits=True)
 
-        location_loss = K.sum(tf.where(tf.is_nan(ciou_loss), tf.zeros_like(ciou_loss), ciou_loss))
-        confidence_loss = K.sum(tf.where(tf.is_nan(confidence_loss), tf.zeros_like(confidence_loss), confidence_loss))
-        class_loss = K.sum(tf.where(tf.is_nan(class_loss), tf.zeros_like(class_loss), class_loss))
+        location_loss = K.sum(ciou_loss)
+        confidence_loss = K.sum(confidence_loss)
+        class_loss = K.sum(class_loss)
         #-----------------------------------------------------------#
         #   计算正样本数量
         #-----------------------------------------------------------#
