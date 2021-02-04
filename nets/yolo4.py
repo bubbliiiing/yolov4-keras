@@ -1,5 +1,6 @@
 from functools import wraps
 
+import keras
 import numpy as np
 import tensorflow as tf
 from keras import backend as K
@@ -106,7 +107,7 @@ def yolo_body(inputs, num_anchors, num_classes):
 
     # 52,52,128 -> 26,26,256
     P3_downsample = ZeroPadding2D(((1,0),(1,0)))(P3)
-    P3_downsample = DarknetConv2D_BN_Leaky(256, (3,3), strides=(2,2))(P3_downsample)
+    P3_downsample = DarknetConv2D_BN_Leaky(256, (3,3), strides=(2,2), kernel_initializer=keras.initializers.normal(mean=0.0, stddev=0.01))(P3_downsample)
     # 26,26,256 + 26,26,256 -> 26,26,512
     P4 = Concatenate()([P3_downsample, P4])
     # 26,26,512 -> 26,26,256 -> 26,26,512 -> 26,26,256 -> 26,26,512 -> 26,26,256
@@ -117,7 +118,7 @@ def yolo_body(inputs, num_anchors, num_classes):
     #   y2=(batch_size,26,26,3,85)
     #---------------------------------------------------#
     P4_output = DarknetConv2D_BN_Leaky(512, (3,3))(P4)
-    P4_output = DarknetConv2D(num_anchors*(num_classes+5), (1,1))(P4_output)
+    P4_output = DarknetConv2D(num_anchors*(num_classes+5), (1,1), kernel_initializer=keras.initializers.normal(mean=0.0, stddev=0.01))(P4_output)
     
     # 26,26,256 -> 13,13,512
     P4_downsample = ZeroPadding2D(((1,0),(1,0)))(P4)
@@ -132,7 +133,7 @@ def yolo_body(inputs, num_anchors, num_classes):
     #   y1=(batch_size,13,13,3,85)
     #---------------------------------------------------#
     P5_output = DarknetConv2D_BN_Leaky(1024, (3,3))(P5)
-    P5_output = DarknetConv2D(num_anchors*(num_classes+5), (1,1))(P5_output)
+    P5_output = DarknetConv2D(num_anchors*(num_classes+5), (1,1), kernel_initializer=keras.initializers.normal(mean=0.0, stddev=0.01))(P5_output)
 
     return Model(inputs, [P5_output, P4_output, P3_output])
 
