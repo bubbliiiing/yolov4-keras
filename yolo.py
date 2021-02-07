@@ -21,15 +21,20 @@ from utils.utils import letterbox_image
 #--------------------------------------------#
 class YOLO(object):
     _defaults = {
-        "model_path"        : 'model_data/yolo4_weight.h5',
+        "model_path"        : 'model_data/yolo4_voc_weights.h5',
         "anchors_path"      : 'model_data/yolo_anchors.txt',
-        "classes_path"      : 'model_data/coco_classes.txt',
+        "classes_path"      : 'model_data/voc_classes.txt',
         "score"             : 0.5,
         "iou"               : 0.3,
         "max_boxes"         : 100,
         # 显存比较小可以使用416x416
         # 显存比较大可以使用608x608
-        "model_image_size"  : (416, 416)
+        "model_image_size"  : (416, 416),
+        #---------------------------------------------------------------------#
+        #   该变量用于控制是否使用letterbox_image对输入图像进行不失真的resize，
+        #   在多次测试后，发现关闭letterbox_image直接resize的效果更好
+        #---------------------------------------------------------------------#
+        "letterbox_image"   : False,
     }
 
     @classmethod
@@ -119,19 +124,22 @@ class YOLO(object):
         #---------------------------------------------------------#
         boxes, scores, classes = yolo_eval(self.yolo_model.output, self.anchors,
                 num_classes, self.input_image_shape, max_boxes = self.max_boxes,
-                score_threshold = self.score, iou_threshold = self.iou)
+                score_threshold = self.score, iou_threshold = self.iou, letterbox_image = self.letterbox_image)
         return boxes, scores, classes
 
     #---------------------------------------------------#
     #   检测图片
     #---------------------------------------------------#
     def detect_image(self, image):
-        start = timer()
         #---------------------------------------------------------#
         #   给图像增加灰条，实现不失真的resize
+        #   也可以直接resize进行识别
         #---------------------------------------------------------#
-        new_image_size = (self.model_image_size[1],self.model_image_size[0])
-        boxed_image = letterbox_image(image, new_image_size)
+        if self.letterbox_image:
+            boxed_image = letterbox_image(image, (self.model_image_size[1],self.model_image_size[0]))
+        else:
+            boxed_image = image.convert('RGB')
+            boxed_image = boxed_image.resize((self.model_image_size[1],self.model_image_size[0]), Image.BICUBIC)
         image_data = np.array(boxed_image, dtype='float32')
         image_data /= 255.
         #---------------------------------------------------------#
@@ -197,8 +205,6 @@ class YOLO(object):
             draw.text(text_origin, str(label,'UTF-8'), fill=(0, 0, 0), font=font)
             del draw
 
-        end = timer()
-        print(end - start)
         return image
 
     def close_session(self):
