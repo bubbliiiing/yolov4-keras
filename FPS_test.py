@@ -17,31 +17,20 @@ video.py里面测试的FPS会低于该FPS，因为摄像头的读取频率有限
 '''
 class FPS_YOLO(YOLO):
     def get_FPS(self, image, test_interval):
-        #---------------------------------------------------------#
-        #   给图像增加灰条，实现不失真的resize
-        #   也可以直接resize进行识别
-        #---------------------------------------------------------#
-        if self.letterbox_image:
-            boxed_image = letterbox_image(image, (self.model_image_size[1],self.model_image_size[0]))
-        else:
-            boxed_image = image.convert('RGB')
-            boxed_image = boxed_image.resize((self.model_image_size[1],self.model_image_size[0]), Image.BICUBIC)
+        # 调整图片使其符合输入要求
+        new_image_size = (self.model_image_size[1],self.model_image_size[0])
+        boxed_image = letterbox_image(image, new_image_size)
         image_data = np.array(boxed_image, dtype='float32')
         image_data /= 255.
-        #---------------------------------------------------------#
-        #   添加上batch_size维度
-        #---------------------------------------------------------#
-        image_data = np.expand_dims(image_data, 0)
+        image_data = np.expand_dims(image_data, 0)  
 
-        #---------------------------------------------------------#
-        #   将图像输入网络当中进行预测！
-        #---------------------------------------------------------#
         out_boxes, out_scores, out_classes = self.sess.run(
             [self.boxes, self.scores, self.classes],
             feed_dict={
                 self.yolo_model.input: image_data,
                 self.input_image_shape: [image.size[1], image.size[0]],
-                K.learning_phase(): 0})
+                K.learning_phase(): 0
+            })
 
         t1 = time.time()
         for _ in range(test_interval):
@@ -50,7 +39,8 @@ class FPS_YOLO(YOLO):
                 feed_dict={
                     self.yolo_model.input: image_data,
                     self.input_image_shape: [image.size[1], image.size[0]],
-                    K.learning_phase(): 0})
+                    K.learning_phase(): 0
+                })
         t2 = time.time()
         tact_time = (t2 - t1) / test_interval
         return tact_time

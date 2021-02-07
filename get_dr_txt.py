@@ -13,7 +13,7 @@ from keras.layers import Input
 from PIL import Image
 from tqdm import tqdm
 
-from nets.yolo4_tiny import yolo_body, yolo_eval
+from nets.yolo4 import yolo_body, yolo_eval
 from utils.utils import letterbox_image
 from yolo import YOLO
 
@@ -41,7 +41,7 @@ class mAP_YOLO(YOLO):
         try:
             self.yolo_model = load_model(model_path, compile=False)
         except:
-            self.yolo_model = yolo_body(Input(shape=(None,None,3)), num_anchors//2, num_classes)
+            self.yolo_model = yolo_body(Input(shape=(None,None,3)), num_anchors//3, num_classes)
             self.yolo_model.load_weights(self.model_path)
         else:
             assert self.yolo_model.layers[-1].output_shape[-1] == \
@@ -71,7 +71,7 @@ class mAP_YOLO(YOLO):
         #---------------------------------------------------------#
         boxes, scores, classes = yolo_eval(self.yolo_model.output, self.anchors,
                 num_classes, self.input_image_shape, max_boxes = self.max_boxes,
-                score_threshold = self.score, iou_threshold = self.iou, letterbox_image=self.letterbox_image)
+                score_threshold = self.score, iou_threshold = self.iou)
         return boxes, scores, classes
 
     #---------------------------------------------------#
@@ -81,13 +81,9 @@ class mAP_YOLO(YOLO):
         f = open("./input/detection-results/"+image_id+".txt","w") 
         #---------------------------------------------------------#
         #   给图像增加灰条，实现不失真的resize
-        #   也可以直接resize进行识别
         #---------------------------------------------------------#
-        if self.letterbox_image:
-            boxed_image = letterbox_image(image, (self.model_image_size[1],self.model_image_size[0]))
-        else:
-            boxed_image = image.convert('RGB')
-            boxed_image = boxed_image.resize((self.model_image_size[1],self.model_image_size[0]), Image.BICUBIC)
+        new_image_size = (self.model_image_size[1],self.model_image_size[0])
+        boxed_image = letterbox_image(image, new_image_size)
         image_data = np.array(boxed_image, dtype='float32')
         image_data /= 255.
         #---------------------------------------------------------#

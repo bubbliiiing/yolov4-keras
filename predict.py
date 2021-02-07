@@ -8,6 +8,7 @@ predict.py有几个注意点
 from keras.layers import Input
 from PIL import Image
 
+from nets.yolo4 import yolo_body
 from yolo import YOLO
 
 yolo = YOLO()
