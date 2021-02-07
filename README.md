@@ -1,6 +1,9 @@
 ## YOLOV4：You Only Look Once目标检测模型在Keras当中的实现
 ---
 
+**2021年2月7日更新：**   
+**加入letterbox_image的选项，关闭letterbox_image后网络的map得到大幅度提升。**
+
 ### 目录
 1. [性能情况 Performance](#性能情况)
 2. [实现的内容 Achievement](#实现的内容)
@@ -15,8 +18,8 @@
 ### 性能情况
 | 训练数据集 | 权值文件名称 | 测试数据集 | 输入图片大小 | mAP 0.5:0.95 | mAP 0.5 |
 | :-----: | :-----: | :------: | :------: | :------: | :-----: |
-| VOC07+12+COCO | [yolo4_voc_weights.h5](https://github.com/bubbliiiing/yolov4-keras/releases/download/v1.0/yolo4_voc_weights.h5) | VOC-Test07 | 416x416 | - | 88.8
-| COCO-Train2017 | [yolo4_weight.h5](https://github.com/bubbliiiing/yolov4-keras/releases/download/v1.0/yolo4_weight.h5) | COCO-Val2017 | 416x416 | 43.1 | 66.0
+| VOC07+12+COCO | [yolo4_voc_weights.h5](https://github.com/bubbliiiing/yolov4-keras/releases/download/v1.0/yolo4_voc_weights.h5) | VOC-Test07 | 416x416 | - | 88.9
+| COCO-Train2017 | [yolo4_weight.h5](https://github.com/bubbliiiing/yolov4-keras/releases/download/v1.0/yolo4_weight.h5) | COCO-Val2017 | 416x416 | 46.4 | 70.5
 
 ### 实现的内容
 - [x] 主干特征提取网络：DarkNet53 => CSPDarkNet53
