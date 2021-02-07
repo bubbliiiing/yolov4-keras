@@ -1,6 +1,9 @@
-from keras import backend as K
-import tensorflow as tf
 import math
+
+import tensorflow as tf
+from keras import backend as K
+
+
 def box_ciou(b1, b2):
     """
     输入为：

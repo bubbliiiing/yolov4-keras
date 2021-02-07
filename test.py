@@ -5,7 +5,7 @@
 #--------------------------------------------#
 from keras.layers import Input
 
-from nets.yolo4 import yolo_body
+from nets.yolo4_tiny import yolo_body
 
 if __name__ == "__main__":
     inputs = Input([416, 416, 3])
