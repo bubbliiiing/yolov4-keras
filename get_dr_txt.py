@@ -8,15 +8,14 @@ import os
 
 import numpy as np
 from keras import backend as K
-from keras.applications.imagenet_utils import preprocess_input
 from keras.layers import Input
+from keras.models import load_model
 from PIL import Image
 from tqdm import tqdm
 
 from nets.yolo4 import yolo_body, yolo_eval
 from utils.utils import letterbox_image
 from yolo import YOLO
-
 
 '''
 这里设置的门限值较低是因为计算map需要用到不同门限条件下的Recall和Precision值。

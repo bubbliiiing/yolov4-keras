@@ -1,9 +1,8 @@
 from functools import wraps
 
 from keras import backend as K
-from keras.layers import (Add, Concatenate, Conv2D, Layer, MaxPooling2D,
-                          UpSampling2D, ZeroPadding2D)
-from keras.layers.advanced_activations import LeakyReLU
+from keras.initializers import random_normal
+from keras.layers import Add, Concatenate, Conv2D, Layer, ZeroPadding2D
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
 from utils.utils import compose
@@ -32,7 +31,7 @@ class Mish(Layer):
 @wraps(Conv2D)
 def DarknetConv2D(*args, **kwargs):
     # darknet_conv_kwargs = {'kernel_regularizer': l2(5e-4)}
-    darknet_conv_kwargs = {}
+    darknet_conv_kwargs = {'kernel_initializer' : random_normal(stddev=0.02)}
     darknet_conv_kwargs['padding'] = 'valid' if kwargs.get('strides')==(2,2) else 'same'
     darknet_conv_kwargs.update(kwargs)
     return Conv2D(*args, **darknet_conv_kwargs)
