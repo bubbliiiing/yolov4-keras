@@ -127,7 +127,7 @@ def get_train_model(model_body, input_shape, num_classes, anchors, anchors_mask,
         output_shape    = (1, ), 
         name            = 'yolo_loss', 
         arguments       = {'input_shape' : input_shape, 'anchors' : anchors, 'anchors_mask' : anchors_mask, 
-                           'num_classes' : num_classes, 'ignore_thresh': 0.5, 'label_smoothing' : label_smoothing}
+                           'num_classes' : num_classes, 'ignore_thresh': 0.7, 'label_smoothing' : label_smoothing}
     )([*model_body.output, *y_true])
     model       = Model([model_body.input, *y_true], model_loss)
     return model
