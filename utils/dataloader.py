@@ -57,7 +57,7 @@ class YoloDatasets(keras.utils.Sequence):
     def rand(self, a=0, b=1):
         return np.random.rand()*(b-a) + a
 
-    def get_random_data(self, annotation_line, input_shape, max_boxes=500, jitter=.3, hue=.1, sat=1.5, val=1.5, random=True):
+    def get_random_data(self, annotation_line, input_shape, max_boxes=100, jitter=.3, hue=.1, sat=1.5, val=1.5, random=True):
         line    = annotation_line.split()
         #------------------------------#
         #   读取图像并转换成RGB图像
