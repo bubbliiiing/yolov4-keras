@@ -122,7 +122,7 @@ def box_iou(b1, b2):
 #---------------------------------------------------#
 #   loss值计算
 #---------------------------------------------------#
-def yolo_loss(args, input_shape, anchors, anchors_mask, num_classes, ignore_thresh=.7, label_smoothing=0.1, print_loss=False):
+def yolo_loss(args, input_shape, anchors, anchors_mask, num_classes, ignore_thresh=.5, label_smoothing=0.1, print_loss=False):
     num_layers = len(anchors_mask)
     #---------------------------------------------------------------------------------------------------#
     #   将预测结果和实际ground truth分开，args是[*model_body.output, *y_true]
