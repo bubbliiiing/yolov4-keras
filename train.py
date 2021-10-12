@@ -118,7 +118,7 @@ if __name__ == "__main__":
     if Cosine_scheduler:
         reduce_lr   = WarmUpCosineDecayScheduler(T_max = 5, eta_min = 1e-5, verbose = 1)
     else:
-        reduce_lr   = ExponentDecayScheduler(decay_rate = 0.92, verbose = 1)
+        reduce_lr   = ExponentDecayScheduler(decay_rate = 0.94, verbose = 1)
     early_stopping  = EarlyStopping(monitor='val_loss', min_delta = 0, patience = 10, verbose = 1)
     loss_history    = LossHistory('logs/')
 
