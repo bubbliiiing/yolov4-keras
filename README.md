@@ -46,14 +46,15 @@ keras==2.1.5
 3、label_smoothing可用于控制是否Label Smoothing平滑。
 
 ## 文件下载
+yolo4_weights.h5是coco数据集的权重。   
+yolo4_voc_weights.h5是voc数据集的权重。   
 训练所需的yolo4_weights.h5可在百度网盘中下载。  
-链接: https://pan.baidu.com/s/1R4LlPqVBdusVa9Mx_BXSTg 提取码: k8v5   
-yolo4_weights.h5是coco数据集的权重。  
-yolo4_voc_weights.h5是voc数据集的权重。
+链接: https://pan.baidu.com/s/1zAChN3AdrjbnGoJMXdgEYA   
+提取码: 3zwj   
 
 VOC数据集下载地址如下，里面已经包括了训练集、测试集、验证集（与测试集一样），无需再次划分：  
-链接: https://pan.baidu.com/s/1YuBbBKxm2FGgTU5OfaeC5A    
-提取码: uack   
+链接: https://pan.baidu.com/s/19Mw2u_df_nBzsC2lg20fQA   
+提取码: j5ge   
 
 ## 训练步骤
 ### a、训练VOC07+12数据集
