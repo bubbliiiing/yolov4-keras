@@ -119,7 +119,7 @@ def yolo_body(input_shape, anchors_mask, num_classes):
 
     return Model(inputs, [P5_output, P4_output, P3_output])
 
-def get_train_model(model_body, input_shape, num_classes, anchors, anchors_mask, label_smoothing):
+def get_train_model(model_body, input_shape, num_classes, anchors, anchors_mask, label_smoothing, focal_loss, alpha, gamma):
     y_true = [Input(shape = (input_shape[0] // {0:32, 1:16, 2:8}[l], input_shape[1] // {0:32, 1:16, 2:8}[l], \
                                 len(anchors_mask[l]), num_classes + 5)) for l in range(len(anchors_mask))]
     model_loss  = Lambda(
@@ -135,7 +135,10 @@ def get_train_model(model_body, input_shape, num_classes, anchors, anchors_mask,
             'box_ratio'         : 0.05,
             'obj_ratio'         : 5 * (input_shape[0] * input_shape[1]) / (416 ** 2), 
             'cls_ratio'         : 1 * (num_classes / 80),
-            'label_smoothing'   : label_smoothing
+            'label_smoothing'   : label_smoothing,
+            'focal_loss'        : focal_loss, 
+            'alpha'             : alpha, 
+            'gamma'             : gamma,
         }
     )([*model_body.output, *y_true])
     model       = Model([model_body.input, *y_true], model_loss)

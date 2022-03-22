@@ -167,9 +167,21 @@ if __name__ == "__main__":
     #------------------------------------------------------------------#
     lr_decay_type       = 'cos'
     #------------------------------------------------------------------#
+    #   focal_loss      是否使用Focal Loss平衡正负样本
+    #   alpha           Focal Loss的正负样本平衡参数
+    #   gamma           Focal Loss的难易分类样本平衡参数
+    #------------------------------------------------------------------#
+    focal_loss          = False
+    alpha               = 0.25
+    gamma               = 2
+    #------------------------------------------------------------------#
     #   save_period     多少个epoch保存一次权值，默认每个世代都保存
     #------------------------------------------------------------------#
     save_period         = 1
+    #------------------------------------------------------------------#
+    #   save_dir        权值与日志文件保存的文件夹
+    #------------------------------------------------------------------#
+    save_dir            = 'logs'
     #------------------------------------------------------------------#
     #   num_workers     用于设置是否使用多线程读取数据，1代表关闭多线程
     #                   开启后会加快数据读取速度，但是会占用更多内存
@@ -203,7 +215,7 @@ if __name__ == "__main__":
         print('Load weights {}.'.format(model_path))
         model_body.load_weights(model_path, by_name=True, skip_mismatch=True)
 
-    model = get_train_model(model_body, input_shape, num_classes, anchors, anchors_mask, label_smoothing)
+    model = get_train_model(model_body, input_shape, num_classes, anchors, anchors_mask, label_smoothing, focal_loss, alpha, gamma)
     #---------------------------#
     #   读取数据集对应的txt
     #---------------------------#
@@ -276,14 +288,14 @@ if __name__ == "__main__":
         #   early_stopping  用于设定早停，val_loss多次不下降自动结束训练，表示模型基本收敛
         #-------------------------------------------------------------------------------#
         time_str        = datetime.datetime.strftime(datetime.datetime.now(),'%Y_%m_%d_%H_%M_%S')
-        log_dir         = os.path.join('logs', "loss_" + str(time_str))
+        log_dir         = os.path.join(save_dir, "loss_" + str(time_str))
         logging         = TensorBoard(log_dir)
         loss_history    = LossHistory(log_dir)
-        checkpoint      = ModelCheckpoint('logs/ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5',
+        checkpoint      = ModelCheckpoint(os.path.join(save_dir, "ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5"), 
                                 monitor = 'val_loss', save_weights_only = True, save_best_only = False, period = save_period)
         early_stopping  = EarlyStopping(monitor='val_loss', min_delta = 0, patience = 10, verbose = 1)
         lr_scheduler    = LearningRateScheduler(lr_scheduler_func, verbose = 1)
-        callbacks       = [logging, loss_history, checkpoint, lr_scheduler, early_stopping]
+        callbacks       = [logging, loss_history, checkpoint, lr_scheduler]
 
         if start_epoch < end_epoch:
             print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
@@ -318,7 +330,7 @@ if __name__ == "__main__":
             #---------------------------------------#
             lr_scheduler_func = get_lr_scheduler(lr_decay_type, Init_lr_fit, Min_lr_fit, UnFreeze_Epoch)
             lr_scheduler    = LearningRateScheduler(lr_scheduler_func, verbose = 1)
-            callbacks       = [logging, loss_history, checkpoint, lr_scheduler, early_stopping]
+            callbacks       = [logging, loss_history, checkpoint, lr_scheduler]
             
             for i in range(len(model.layers)): 
                 model.layers[i].trainable = True
