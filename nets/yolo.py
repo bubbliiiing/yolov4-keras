@@ -137,6 +137,7 @@ def get_train_model(model_body, input_shape, num_classes, anchors, anchors_mask,
             'cls_ratio'         : 1 * (num_classes / 80),
             'label_smoothing'   : label_smoothing,
             'focal_loss'        : focal_loss, 
+            'focal_loss_ratio'  : 10,
             'alpha'             : alpha, 
             'gamma'             : gamma,
         }

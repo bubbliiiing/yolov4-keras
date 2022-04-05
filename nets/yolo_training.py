@@ -135,6 +135,7 @@ def yolo_loss(
     cls_ratio       = 0.5 / 4, 
     label_smoothing = 0.1,
     focal_loss      = False,
+    focal_loss_ratio= 10,
     gamma           = 2,
     alpha           = 0.25, 
     print_loss      = False, 
@@ -273,8 +274,8 @@ def yolo_loss(
         #   不适合当作负样本，所以忽略掉。
         #------------------------------------------------------------------------------#
         if focal_loss:
-            confidence_loss = object_mask * (tf.ones_like(raw_pred[...,4:5]) - tf.sigmoid(raw_pred[...,4:5])) ** gamma * alpha * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True) + \
-                        (1 - object_mask) * ignore_mask * tf.sigmoid(raw_pred[...,4:5]) ** gamma * (1 - alpha) * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True)
+            confidence_loss = (object_mask * (tf.ones_like(raw_pred[...,4:5]) - tf.sigmoid(raw_pred[...,4:5])) ** gamma * alpha * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True) + \
+                        (1 - object_mask) * ignore_mask * tf.sigmoid(raw_pred[...,4:5]) ** gamma * (1 - alpha) * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True)) * focal_loss_ratio
         else:
             confidence_loss = object_mask * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True) + \
                         (1 - object_mask) * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True) * ignore_mask
