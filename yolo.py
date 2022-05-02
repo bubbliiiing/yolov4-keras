@@ -65,7 +65,6 @@ class YOLO(object):
     #---------------------------------------------------#
     def __init__(self, **kwargs):
         self.__dict__.update(self._defaults)
-        show_config(**self._defaults)
         for name, value in kwargs.items():
             setattr(self, name, value)
             
@@ -85,6 +84,8 @@ class YOLO(object):
 
         self.sess = K.get_session()
         self.boxes, self.scores, self.classes = self.generate()
+        
+        show_config(**self._defaults)
 
     #---------------------------------------------------#
     #   载入模型
