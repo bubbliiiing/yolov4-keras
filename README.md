@@ -24,12 +24,13 @@ BiliBili视频中的原仓库地址为：https://github.com/bubbliiiing/yolov4-k
 ## 相关仓库
 | 模型 | 路径 |
 | :----- | :----- |
-YoloV3 | https://github.com/bubbliiiing/yolo3-keras  
-Efficientnet-Yolo3 | https://github.com/bubbliiiing/efficientnet-yolo3-keras  
+YoloV3 | https://github.com/bubbliiiing/yolo3-keras  
+Efficientnet-Yolo3 | https://github.com/bubbliiiing/efficientnet-yolo3-keras  
 YoloV4 | https://github.com/bubbliiiing/yolov4-keras
 YoloV4-tiny | https://github.com/bubbliiiing/yolov4-tiny-keras
 Mobilenet-Yolov4 | https://github.com/bubbliiiing/mobilenet-yolov4-keras
-YoloV5 | https://github.com/bubbliiiing/yolov5-keras
+YoloV5-V5.0 | https://github.com/bubbliiiing/yolov5-keras
+YoloV5-V6.1 | https://github.com/bubbliiiing/yolov5-v6.1-keras
 YoloX | https://github.com/bubbliiiing/yolox-keras
 
 ## 性能情况

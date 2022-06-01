@@ -10,7 +10,8 @@ from utils.utils import cvtColor, preprocess_input
 
 
 class YoloDatasets(keras.utils.Sequence):
-    def __init__(self, annotation_lines, input_shape, anchors, batch_size, num_classes, anchors_mask, epoch_now, epoch_length, mosaic, train, mosaic_ratio = 0.7):
+    def __init__(self, annotation_lines, input_shape, anchors, batch_size, num_classes, anchors_mask, epoch_now, epoch_length, \
+                        mosaic, mixup, mosaic_prob, mixup_prob, train, special_aug_ratio = 0.7):
         self.annotation_lines   = annotation_lines
         self.length             = len(self.annotation_lines)
         
@@ -22,10 +23,11 @@ class YoloDatasets(keras.utils.Sequence):
         self.epoch_now          = epoch_now - 1
         self.epoch_length       = epoch_length
         self.mosaic             = mosaic
+        self.mosaic_prob        = mosaic_prob
+        self.mixup              = mixup
+        self.mixup_prob         = mixup_prob
         self.train              = train
-        self.mosaic_ratio       = mosaic_ratio
-
-        self.threshold          = 4
+        self.special_aug_ratio  = special_aug_ratio
 
     def __len__(self):
         return math.ceil(len(self.annotation_lines) / float(self.batch_size))
@@ -39,14 +41,16 @@ class YoloDatasets(keras.utils.Sequence):
             #   训练时进行数据的随机增强
             #   验证时不进行数据的随机增强
             #---------------------------------------------------#
-            if self.mosaic:
-                if self.rand() < 0.5 and self.epoch_now < self.epoch_length * self.mosaic_ratio:
-                    lines = sample(self.annotation_lines, 3)
-                    lines.append(self.annotation_lines[i])
-                    shuffle(lines)
-                    image, box = self.get_random_data_with_Mosaic(lines, self.input_shape)
-                else:
-                    image, box = self.get_random_data(self.annotation_lines[i], self.input_shape, random = self.train)
+            if self.mosaic and self.rand() < self.mosaic_prob and self.epoch_now < self.epoch_length * self.special_aug_ratio:
+                lines = sample(self.annotation_lines, 3)
+                lines.append(self.annotation_lines[i])
+                shuffle(lines)
+                image, box = self.get_random_data_with_Mosaic(lines, self.input_shape)
+                    
+                if self.mixup and self.rand() < self.mixup_prob:
+                    lines           = sample(self.annotation_lines, 1)
+                    image_2, box_2  = self.get_random_data(lines[0], self.input_shape, random = self.train)
+                    image, box      = self.get_random_data_with_MixUp(image, box, image_2, box_2)
             else:
                 image, box  = self.get_random_data(self.annotation_lines[i], self.input_shape, random = self.train)
             image_data.append(preprocess_input(np.array(image, np.float32)))
@@ -360,6 +364,25 @@ class YoloDatasets(keras.utils.Sequence):
         #---------------------------------#
         new_boxes = self.merge_bboxes(box_datas, cutx, cuty)
 
+        #---------------------------------#
+        #   将box进行调整
+        #---------------------------------#
+        box_data = np.zeros((max_boxes, 5))
+        if len(new_boxes)>0:
+            if len(new_boxes)>max_boxes: new_boxes = new_boxes[:max_boxes]
+            box_data[:len(new_boxes)] = new_boxes
+        return new_image, box_data
+
+    def get_random_data_with_MixUp(self, image_1, box_1, image_2, box_2, max_boxes=500):
+        new_image = np.array(image_1, np.float32) * 0.5 + np.array(image_2, np.float32) * 0.5
+        
+        box_1_wh    = box_1[:, 2:4] - box_1[:, 0:2]
+        box_1_valid = box_1_wh[:, 0] > 0
+        
+        box_2_wh    = box_2[:, 2:4] - box_2[:, 0:2]
+        box_2_valid = box_2_wh[:, 0] > 0
+        
+        new_boxes = np.concatenate([box_1[box_1_valid, :], box_2[box_2_valid, :]], axis=0)
         #---------------------------------#
         #   将box进行调整
         #---------------------------------#
