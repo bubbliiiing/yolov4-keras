@@ -121,7 +121,7 @@ def box_iou_loss(b1, b2, iou_type='siou'):
         #   enclose_diagonal (batch, feat_w, feat_h, anchor_num)
         #-----------------------------------------------------------#
         enclose_diagonal = K.sum(K.square(enclose_wh), axis=-1)
-        ciou    = iou - 1.0 * (center_distance) / K.maximum(enclose_diagonal ,K.epsilon())
+        ciou    = iou - 1.0 * (center_distance) / K.maximum(enclose_diagonal, K.epsilon())
         
         v       = 4 * K.square(tf.math.atan2(b1_wh[..., 0], K.maximum(b1_wh[..., 1], K.epsilon())) - tf.math.atan2(b2_wh[..., 0], K.maximum(b2_wh[..., 1],K.epsilon()))) / (math.pi * math.pi)
         alpha   = v /  K.maximum((1.0 - iou + v), K.epsilon())
@@ -139,9 +139,9 @@ def box_iou_loss(b1, b2, iou_type='siou'):
         #----------------------------------------------------#
         #   求h和w方向上的sin比值
         #----------------------------------------------------#
-        sin_alpha_1 = tf.abs(center_wh[..., 0]) / sigma
-        sin_alpha_2 = tf.abs(center_wh[..., 1]) / sigma
-        
+        sin_alpha_1 = tf.abs(center_wh[..., 0]) / K.maximum(sigma, K.epsilon())
+        sin_alpha_2 = tf.abs(center_wh[..., 1]) / K.maximum(sigma, K.epsilon())
+
         #----------------------------------------------------#
         #   求门限，二分之根号二，0.707
         #   如果门限大于0.707，代表某个方向的角度大于45°
@@ -149,17 +149,20 @@ def box_iou_loss(b1, b2, iou_type='siou'):
         #----------------------------------------------------#
         threshold   = pow(2, 0.5) / 2
         sin_alpha   = tf.where(sin_alpha_1 > threshold, sin_alpha_2, sin_alpha_1)
+
+        #----------------------------------------------------#
+        #   alpha越接近于45°，angle_cost越接近于1，gamma越接近于1
+        #   alpha越接近于0°，angle_cost越接近于0，gamma越接近于2
+        #----------------------------------------------------#
         angle_cost  = tf.cos(tf.asin(sin_alpha) * 2 - math.pi / 2)
+        gamma       = 2 - angle_cost
         
         #----------------------------------------------------#
         #   Distance cost
-        #   alpha越接近于45°，gamma值越大，此时distance_cost越大
-        #   alpha越接近于0°，gamma值越小，此时distance_cost越小
         #   求中心与外包围举行高宽的比值
         #----------------------------------------------------#
-        gamma           = 2 - angle_cost
-        rho_x           = (center_wh[..., 0] / enclose_wh[..., 0]) ** 2
-        rho_y           = (center_wh[..., 1] / enclose_wh[..., 1]) ** 2
+        rho_x           = (center_wh[..., 0] / K.maximum(enclose_wh[..., 0], K.epsilon())) ** 2
+        rho_y           = (center_wh[..., 1] / K.maximum(enclose_wh[..., 1], K.epsilon())) ** 2
         distance_cost   = 2 - tf.exp(-gamma * rho_x) - tf.exp(-gamma * rho_y)
         
         #----------------------------------------------------#
@@ -167,8 +170,8 @@ def box_iou_loss(b1, b2, iou_type='siou'):
         #   真实框与预测框的宽高差异与最大值的比值
         #   差异越小，costshape_cost越小
         #----------------------------------------------------#
-        omiga_w     = tf.abs(b1_wh[..., 0] - b2_wh[..., 0]) / tf.maximum(b1_wh[..., 0], b2_wh[..., 0])
-        omiga_h     = tf.abs(b1_wh[..., 1] - b2_wh[..., 1]) / tf.maximum(b1_wh[..., 1], b2_wh[..., 1])
+        omiga_w     = tf.abs(b1_wh[..., 0] - b2_wh[..., 0]) / K.maximum(tf.maximum(b1_wh[..., 0], b2_wh[..., 0]), K.epsilon())
+        omiga_h     = tf.abs(b1_wh[..., 1] - b2_wh[..., 1]) / K.maximum(tf.maximum(b1_wh[..., 1], b2_wh[..., 1]), K.epsilon())
         shape_cost  = tf.pow(1 - tf.exp(-1 * omiga_w), 4) + tf.pow(1 - tf.exp(-1 * omiga_h), 4)
         out         = iou - 0.5 * (distance_cost + shape_cost)
 
