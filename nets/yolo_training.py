@@ -6,73 +6,6 @@ from keras import backend as K
 from utils.utils_bbox import get_anchors_and_decode
 
 
-def box_ciou(b1, b2):
-    """
-    输入为：
-    ----------
-    b1: tensor, shape=(batch, feat_w, feat_h, anchor_num, 4), xywh
-    b2: tensor, shape=(batch, feat_w, feat_h, anchor_num, 4), xywh
-
-    返回为：
-    -------
-    ciou: tensor, shape=(batch, feat_w, feat_h, anchor_num, 1)
-    """
-    #-----------------------------------------------------------#
-    #   求出预测框左上角右下角
-    #   b1_mins     (batch, feat_w, feat_h, anchor_num, 2)
-    #   b1_maxes    (batch, feat_w, feat_h, anchor_num, 2)
-    #-----------------------------------------------------------#
-    b1_xy = b1[..., :2]
-    b1_wh = b1[..., 2:4]
-    b1_wh_half = b1_wh/2.
-    b1_mins = b1_xy - b1_wh_half
-    b1_maxes = b1_xy + b1_wh_half
-    #-----------------------------------------------------------#
-    #   求出真实框左上角右下角
-    #   b2_mins     (batch, feat_w, feat_h, anchor_num, 2)
-    #   b2_maxes    (batch, feat_w, feat_h, anchor_num, 2)
-    #-----------------------------------------------------------#
-    b2_xy = b2[..., :2]
-    b2_wh = b2[..., 2:4]
-    b2_wh_half = b2_wh/2.
-    b2_mins = b2_xy - b2_wh_half
-    b2_maxes = b2_xy + b2_wh_half
-
-    #-----------------------------------------------------------#
-    #   求真实框和预测框所有的iou
-    #   iou         (batch, feat_w, feat_h, anchor_num)
-    #-----------------------------------------------------------#
-    intersect_mins = K.maximum(b1_mins, b2_mins)
-    intersect_maxes = K.minimum(b1_maxes, b2_maxes)
-    intersect_wh = K.maximum(intersect_maxes - intersect_mins, 0.)
-    intersect_area = intersect_wh[..., 0] * intersect_wh[..., 1]
-    b1_area = b1_wh[..., 0] * b1_wh[..., 1]
-    b2_area = b2_wh[..., 0] * b2_wh[..., 1]
-    union_area = b1_area + b2_area - intersect_area
-    iou = intersect_area / K.maximum(union_area, K.epsilon())
-
-    #-----------------------------------------------------------#
-    #   计算中心的差距
-    #   center_distance (batch, feat_w, feat_h, anchor_num)
-    #-----------------------------------------------------------#
-    center_distance = K.sum(K.square(b1_xy - b2_xy), axis=-1)
-    enclose_mins = K.minimum(b1_mins, b2_mins)
-    enclose_maxes = K.maximum(b1_maxes, b2_maxes)
-    enclose_wh = K.maximum(enclose_maxes - enclose_mins, 0.0)
-    #-----------------------------------------------------------#
-    #   计算对角线距离
-    #   enclose_diagonal (batch, feat_w, feat_h, anchor_num)
-    #-----------------------------------------------------------#
-    enclose_diagonal = K.sum(K.square(enclose_wh), axis=-1)
-    ciou = iou - 1.0 * (center_distance) / K.maximum(enclose_diagonal ,K.epsilon())
-    
-    v = 4 * K.square(tf.math.atan2(b1_wh[..., 0], K.maximum(b1_wh[..., 1], K.epsilon())) - tf.math.atan2(b2_wh[..., 0], K.maximum(b2_wh[..., 1],K.epsilon()))) / (math.pi * math.pi)
-    alpha = v /  K.maximum((1.0 - iou + v), K.epsilon())
-    ciou = ciou - alpha * v
-
-    ciou = K.expand_dims(ciou, -1)
-    return ciou
-
 #---------------------------------------------------#
 #   平滑标签
 #---------------------------------------------------#
@@ -117,7 +50,129 @@ def box_iou(b1, b2):
     b1_area         = b1_wh[..., 0] * b1_wh[..., 1]
     b2_area         = b2_wh[..., 0] * b2_wh[..., 1]
     iou             = intersect_area / (b1_area + b2_area - intersect_area)
+    
     return iou
+
+def box_iou_loss(b1, b2, iou_type='siou'):
+    """
+    输入为：
+    ----------
+    b1: tensor, shape=(batch, feat_w, feat_h, anchor_num, 4), xywh
+    b2: tensor, shape=(batch, feat_w, feat_h, anchor_num, 4), xywh
+
+    返回为：
+    -------
+    ciou: tensor, shape=(batch, feat_w, feat_h, anchor_num, 1)
+    """
+    #-----------------------------------------------------------#
+    #   求出预测框左上角右下角
+    #   b1_mins     (batch, feat_w, feat_h, anchor_num, 2)
+    #   b1_maxes    (batch, feat_w, feat_h, anchor_num, 2)
+    #-----------------------------------------------------------#
+    b1_xy       = b1[..., :2]
+    b1_wh       = b1[..., 2:4]
+    b1_wh_half  = b1_wh/2.
+    b1_mins     = b1_xy - b1_wh_half
+    b1_maxes    = b1_xy + b1_wh_half
+    #-----------------------------------------------------------#
+    #   求出真实框左上角右下角
+    #   b2_mins     (batch, feat_w, feat_h, anchor_num, 2)
+    #   b2_maxes    (batch, feat_w, feat_h, anchor_num, 2)
+    #-----------------------------------------------------------#
+    b2_xy       = b2[..., :2]
+    b2_wh       = b2[..., 2:4]
+    b2_wh_half  = b2_wh/2.
+    b2_mins     = b2_xy - b2_wh_half
+    b2_maxes    = b2_xy + b2_wh_half
+
+    #-----------------------------------------------------------#
+    #   求真实框和预测框所有的iou
+    #   iou         (batch, feat_w, feat_h, anchor_num)
+    #-----------------------------------------------------------#
+    intersect_mins  = K.maximum(b1_mins, b2_mins)
+    intersect_maxes = K.minimum(b1_maxes, b2_maxes)
+    intersect_wh    = K.maximum(intersect_maxes - intersect_mins, 0.)
+    intersect_area  = intersect_wh[..., 0] * intersect_wh[..., 1]
+    b1_area         = b1_wh[..., 0] * b1_wh[..., 1]
+    b2_area         = b2_wh[..., 0] * b2_wh[..., 1]
+    union_area      = b1_area + b2_area - intersect_area
+    iou             = intersect_area / K.maximum(union_area, K.epsilon())
+
+    #----------------------------------------------------#
+    #   计算中心的差距
+    #----------------------------------------------------#
+    center_wh       = b1_xy - b2_xy
+        
+    #----------------------------------------------------#
+    #   找到包裹两个框的最小框的左上角和右下角
+    #----------------------------------------------------#
+    enclose_mins    = K.minimum(b1_mins, b2_mins)
+    enclose_maxes   = K.maximum(b1_maxes, b2_maxes)
+    enclose_wh      = K.maximum(enclose_maxes - enclose_mins, 0.0)
+    
+    if iou_type == 'ciou':
+        #-----------------------------------------------------------#
+        #   计算中心的差距
+        #   center_distance (batch, feat_w, feat_h, anchor_num)
+        #-----------------------------------------------------------#
+        center_distance = K.sum(K.square(center_wh), axis=-1)
+        #-----------------------------------------------------------#
+        #   计算对角线距离
+        #   enclose_diagonal (batch, feat_w, feat_h, anchor_num)
+        #-----------------------------------------------------------#
+        enclose_diagonal = K.sum(K.square(enclose_wh), axis=-1)
+        ciou    = iou - 1.0 * (center_distance) / K.maximum(enclose_diagonal ,K.epsilon())
+        
+        v       = 4 * K.square(tf.math.atan2(b1_wh[..., 0], K.maximum(b1_wh[..., 1], K.epsilon())) - tf.math.atan2(b2_wh[..., 0], K.maximum(b2_wh[..., 1],K.epsilon()))) / (math.pi * math.pi)
+        alpha   = v /  K.maximum((1.0 - iou + v), K.epsilon())
+        out     = ciou - alpha * v
+
+    elif iou_type == 'siou':
+        #----------------------------------------------------#
+        #   Angle cost
+        #----------------------------------------------------#
+        #----------------------------------------------------#
+        #   计算中心的距离
+        #----------------------------------------------------#
+        sigma       = tf.pow(center_wh[..., 0] ** 2 + center_wh[..., 1] ** 2, 0.5)
+        
+        #----------------------------------------------------#
+        #   求h和w方向上的sin比值
+        #----------------------------------------------------#
+        sin_alpha_1 = tf.abs(center_wh[..., 0]) / sigma
+        sin_alpha_2 = tf.abs(center_wh[..., 1]) / sigma
+        
+        #----------------------------------------------------#
+        #   求门限，二分之根号二，0.707
+        #   如果门限大于0.707，代表某个方向的角度大于45°
+        #   此时取另一个方向的角度
+        #----------------------------------------------------#
+        threshold   = pow(2, 0.5) / 2
+        sin_alpha   = tf.where(sin_alpha_1 > threshold, sin_alpha_2, sin_alpha_1)
+        angle_cost  = tf.cos(tf.asin(sin_alpha) * 2 - math.pi / 2)
+        
+        #----------------------------------------------------#
+        #   Distance cost
+        #   alpha越接近于45°，gamma值越大，此时distance_cost越大
+        #   alpha越接近于0°，gamma值越小，此时distance_cost越小
+        #   求中心与外包围举行高宽的比值
+        #----------------------------------------------------#
+        gamma           = 2 - angle_cost
+        rho_x           = (center_wh[..., 0] / enclose_wh[..., 0]) ** 2
+        rho_y           = (center_wh[..., 1] / enclose_wh[..., 1]) ** 2
+        distance_cost   = 2 - tf.exp(-gamma * rho_x) - tf.exp(-gamma * rho_y)
+        
+        #----------------------------------------------------#
+        #   Shape cost
+        #   真实框与预测框的宽高差异与最大值的比值
+        #   差异越小，costshape_cost越小
+        #----------------------------------------------------#
+        omiga_w     = tf.abs(b1_wh[..., 0] - b2_wh[..., 0]) / tf.maximum(b1_wh[..., 0], b2_wh[..., 0])
+        omiga_h     = tf.abs(b1_wh[..., 1] - b2_wh[..., 1]) / tf.maximum(b1_wh[..., 1], b2_wh[..., 1])
+        shape_cost  = tf.pow(1 - tf.exp(-1 * omiga_w), 4) + tf.pow(1 - tf.exp(-1 * omiga_h), 4)
+        out         = iou - 0.5 * (distance_cost + shape_cost)
+
+    return K.expand_dims(out, -1)
 
 #---------------------------------------------------#
 #   loss值计算
@@ -139,6 +194,7 @@ def yolo_loss(
     gamma           = 2,
     alpha           = 0.25, 
     print_loss      = False, 
+    iou_type        = 'ciou'
 ):
     num_layers = len(anchors_mask)
     #---------------------------------------------------------------------------------------------------#
@@ -261,9 +317,9 @@ def yolo_loss(
         #   计算Ciou loss
         #-----------------------------------------------------------#
         raw_true_box    = y_true[l][...,0:4]
-        ciou            = box_ciou(pred_box, raw_true_box)
-        ciou_loss       = object_mask * (1 - ciou)
-        location_loss   = K.sum(ciou_loss)
+        iou             = box_iou_loss(pred_box, raw_true_box, iou_type)
+        iou_loss        = object_mask * (1 - iou)
+        location_loss   = K.sum(iou_loss)
         
         #------------------------------------------------------------------------------#
         #   如果该位置本来有框，那么计算1与置信度的交叉熵

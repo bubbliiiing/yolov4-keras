@@ -203,6 +203,10 @@ if __name__ == "__main__":
     focal_alpha         = 0.25
     focal_gamma         = 2
     #------------------------------------------------------------------#
+    #   iou_type        使用什么iou损失，ciou或者siou
+    #------------------------------------------------------------------#
+    iou_type            = 'ciou'
+    #------------------------------------------------------------------#
     #   save_period     多少个epoch保存一次权值
     #------------------------------------------------------------------#
     save_period         = 10
@@ -263,9 +267,9 @@ if __name__ == "__main__":
 
     if ngpus_per_node > 1:
         model = multi_gpu_model(model_body, gpus=ngpus_per_node)
-        model = get_train_model(model, input_shape, num_classes, anchors, anchors_mask, label_smoothing, focal_loss, focal_alpha, focal_gamma)
+        model = get_train_model(model, input_shape, num_classes, anchors, anchors_mask, label_smoothing, focal_loss, focal_alpha, focal_gamma, iou_type)
     else:
-        model = get_train_model(model_body, input_shape, num_classes, anchors, anchors_mask, label_smoothing, focal_loss, focal_alpha, focal_gamma)
+        model = get_train_model(model_body, input_shape, num_classes, anchors, anchors_mask, label_smoothing, focal_loss, focal_alpha, focal_gamma, iou_type)
         
     #---------------------------#
     #   读取数据集对应的txt
