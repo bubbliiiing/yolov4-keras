@@ -1,6 +1,8 @@
+import random
 from functools import reduce
 
 import numpy as np
+import tensorflow as tf
 from PIL import Image
 
 
@@ -72,6 +74,14 @@ def show_config(**kwargs):
         print('|%25s | %40s|' % (str(key), str(value)))
     print('-' * 70)
     
+#---------------------------------------------------#
+#   设置种子
+#---------------------------------------------------#
+def seed_everything(seed=11):
+    random.seed(seed)
+    np.random.seed(seed)
+    tf.set_random_seed(seed)
+
 #-------------------------------------------------------------------------------------------------------------------------------#
 #   From https://github.com/ckyrkou/Keras_FLOP_Estimator 
 #   Fix lots of bugs
